@@ -6,6 +6,7 @@ import com.siemens.internship.response.ItemResponse;
 import com.siemens.internship.service.implementation.ItemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -19,11 +20,14 @@ import java.util.concurrent.CompletableFuture;
 @RestController
 @RequestMapping("/api/v1/items") // Better to include API versioning
 @RequiredArgsConstructor
+@Slf4j
 public class ItemController {
     private final ItemService itemService;
 
     @GetMapping
     public ResponseEntity<HttpResponse> getAllItems(Pageable pageable) {
+        log.info("[ItemController] Getting all items with the following pagination parameters: {}", pageable);
+
         Page<ItemResponse> result = itemService.findAll(pageable);
 
         return ResponseEntity.ok(
@@ -40,6 +44,8 @@ public class ItemController {
 
     @GetMapping("/id={id}")
     public ResponseEntity<HttpResponse> getItemById(@PathVariable("id") Long id) {
+        log.info("[ItemController] Getting an item by id \"{}\"", id);
+
         ItemResponse result = itemService.findById(id);
 
         return ResponseEntity.ok(
@@ -56,12 +62,14 @@ public class ItemController {
 
     @GetMapping("/process")
     public CompletableFuture<ResponseEntity<HttpResponse>> processItemsAsync() {
+        log.info("[ItemController] Processing all items");
+
         return itemService.processItemsAsync()
                 .thenApply(processedItems ->
                         ResponseEntity.accepted().body(
                                 HttpResponse.builder()
                                         .timestamp(LocalDateTime.now().toString())
-                                        .responseMessage("The items wered processed successfully")
+                                        .responseMessage("The items were processed successfully")
                                         .responseStatus(HttpStatus.ACCEPTED)
                                         .responseStatusCode(HttpStatus.ACCEPTED.value())
                                         .body(processedItems)
@@ -71,6 +79,8 @@ public class ItemController {
 
     @PostMapping
     public ResponseEntity<HttpResponse> createItem(@Valid @RequestBody ItemRequest request) {
+        log.info("[ItemController] Saving an item with the following request body: {}", request);
+
         ItemResponse result = itemService.save(request);
 
         URI location = URI.create("/api/v1/items/" + result.id());
@@ -89,6 +99,8 @@ public class ItemController {
 
     @PutMapping("/id={id}")
     public ResponseEntity<HttpResponse> updateItem(@PathVariable("id") Long id, @Valid @RequestBody ItemRequest request) {
+        log.info("[ItemController] Updating an item with the following id and request body: \"{}\" | {}", id, request);
+
         ItemResponse result = itemService.updateById(id, request);
 
         return ResponseEntity.ok(
@@ -105,6 +117,8 @@ public class ItemController {
 
     @DeleteMapping("/id={id}")
     public ResponseEntity<HttpResponse> deleteItem(@PathVariable("id") Long id) {
+        log.info("[ItemController] Deleting an item with the following id: \"{}\"", id);
+
         itemService.deleteById(id);
 
         return ResponseEntity.ok(

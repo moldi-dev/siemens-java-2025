@@ -1,4 +1,4 @@
-package com.siemens.internship.exception;
+package com.siemens.internship.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;

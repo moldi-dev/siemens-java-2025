@@ -1,5 +1,6 @@
 package com.siemens.internship.exception;
 
+import com.siemens.internship.response.ErrorResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

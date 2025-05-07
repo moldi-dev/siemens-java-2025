@@ -10,6 +10,7 @@ import com.siemens.internship.response.ItemResponse;
 import com.siemens.internship.service.IItemService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class ItemService implements IItemService {
     private final ItemRepository itemRepository;
     private final ItemMapper itemMapper;
@@ -33,6 +35,7 @@ public class ItemService implements IItemService {
         Page<Item> items = itemRepository.findAll(pageable);
 
         if (items.isEmpty()) {
+            log.error("[ItemService] No items found, throwing a not found exception");
             throw new ResourceNotFoundException("No items could be found");
         }
 
@@ -44,7 +47,10 @@ public class ItemService implements IItemService {
         return itemRepository
                 .findById(id)
                 .map(itemMapper::toItemResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("The item by the provided id could not be found"));
+                .orElseGet(() -> {
+                    log.error("[ItemService] The item by the provided id \"{}\" couldn't be found, throwing a not found exception", id);
+                    throw new ResourceNotFoundException(String.format("The item by the provided id (%d) couldn't be found", id));
+                });
     }
 
     @Override
@@ -58,7 +64,8 @@ public class ItemService implements IItemService {
                 .findByNameIgnoreCase(itemRequest.name());
 
         if (searchedItemByName.isPresent()) {
-            throw new ResourceAlreadyExistsException("An item with this name already exists");
+            log.error("[ItemService] An item with this name \"{}\" already exists, throwing a conflict exception", itemRequest.name());
+            throw new ResourceAlreadyExistsException(String.format("An item with this name (%s) already exists", itemRequest.name()));
         }
 
         Item itemToSave = Item
@@ -76,7 +83,10 @@ public class ItemService implements IItemService {
     public ItemResponse updateById(Long id, ItemRequest itemRequest) {
         Item itemToUpdate = itemRepository
                 .findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("The item by the provided id could not be found"));
+                .orElseGet(() -> {
+                    log.error("[ItemService] The item by the provided id \"{}\" couldn't be found, throwing a not found exception", id);
+                    throw new ResourceNotFoundException(String.format("The item by the provided id (%d) couldn't be found", id));
+                });
 
         itemToUpdate.setName(itemRequest.name());
         itemToUpdate.setDescription(itemRequest.description());
@@ -90,7 +100,10 @@ public class ItemService implements IItemService {
     public void deleteById(Long id) {
         Item itemToDelete = itemRepository
                 .findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("The item by the provided id could not be found"));
+                .orElseGet(() -> {
+                    log.error("[ItemService] The item by the provided id \"{}\" couldn't be found, throwing a not found exception", id);
+                    throw new ResourceNotFoundException(String.format("The item by the provided id (%d) couldn't be found", id));
+                });
 
         itemRepository.delete(itemToDelete);
     }
@@ -102,6 +115,7 @@ public class ItemService implements IItemService {
         List<Item> items = itemRepository.findAll();
 
         if (items.isEmpty()) {
+            log.error("[ItemService] No items found, throwing a not found exception");
             throw new ResourceNotFoundException("No items could be found");
         }
 
@@ -123,13 +137,14 @@ public class ItemService implements IItemService {
                     }
 
                     catch (InterruptedException e) {
+                        log.error("[ItemService] Interrupted while waiting for processing of items: {}", e.getMessage());
                         Thread.currentThread().interrupt(); // Preserve thread interrupt status
                         return null; // Skip this item
                     }
 
                     catch (Exception e) {
                         // Log and skip the failed item
-                        System.err.println("Failed to process the item with id " + item.getId() + ": " + e.getMessage());
+                        log.error("[ItemService] Failed to process the item with id \"{}\" | {}", item.getId(), e.getMessage());
                         return null;
                     }
                 }))

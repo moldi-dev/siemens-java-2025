@@ -15,7 +15,7 @@ public record ItemRequest(
         @Size(min = 1, max = 100, message = "The status must contain at most 100 characters")
         String status,
 
-        // Would've been way simpler to just use the @Email annotation instead the of the pattern, but the requirements ask for a regex
+        // Would've been way simpler to just use the @Email annotation instead of the pattern, but the requirements ask for a regex
         // The regular expression has been copied from here: https://www.baeldung.com/java-email-validation-regex
         @NotBlank(message = "The email is required")
         @Size(min = 1, max = 100, message = "The email must contain at most 100 characters")
